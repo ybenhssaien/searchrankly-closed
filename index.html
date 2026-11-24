@@ -16,7 +16,7 @@
     --border: #e8e3f5;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg: #17131f;
       --card-bg: #1f1a2b;
       --text: #f3f1f7;
@@ -24,6 +24,14 @@
       --brand: #a992ff;
       --border: #332a47;
     }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17131f;
+    --card-bg: #1f1a2b;
+    --text: #f3f1f7;
+    --text-muted: #a89fb8;
+    --brand: #a992ff;
+    --border: #332a47;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -64,6 +72,26 @@
     letter-spacing: -0.02em;
     color: var(--brand);
     margin: 0;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    line-height: 1;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 999px;
+    cursor: pointer;
+    padding: 0;
   }
   .lang-switch {
     display: flex;
@@ -124,11 +152,14 @@
 <main>
   <div class="top-row">
     <p class="logo">Rankly</p>
-    <div class="lang-switch" role="group" aria-label="Choisir la langue / Choose language">
-      <button type="button" data-lang="fr">FR</button>
-      <button type="button" data-lang="en">EN</button>
-      <button type="button" data-lang="es">ES</button>
-      <button type="button" data-lang="ar">AR</button>
+    <div class="controls">
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Changer de thème / Toggle theme">🌙</button>
+      <div class="lang-switch" role="group" aria-label="Choisir la langue / Choose language">
+        <button type="button" data-lang="fr">FR</button>
+        <button type="button" data-lang="en">EN</button>
+        <button type="button" data-lang="es">ES</button>
+        <button type="button" data-lang="ar">AR</button>
+      </div>
     </div>
   </div>
 
@@ -214,6 +245,42 @@
 </main>
 <script>
 (function () {
+  var themeToggle = document.getElementById("theme-toggle");
+  var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+
+  function effectiveTheme() {
+    var explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit === "light" || explicit === "dark") return explicit;
+    return prefersDark && prefersDark.matches ? "dark" : "light";
+  }
+
+  function updateToggleIcon() {
+    if (!themeToggle) return;
+    var dark = effectiveTheme() === "dark";
+    themeToggle.textContent = dark ? "☀️" : "🌙";
+    themeToggle.setAttribute("aria-pressed", String(dark));
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("rankly-closure-theme", theme); } catch (e) {}
+    updateToggleIcon();
+  }
+
+  if (themeToggle) {
+    themeToggle.addEventListener("click", function () {
+      applyTheme(effectiveTheme() === "dark" ? "light" : "dark");
+    });
+  }
+
+  try {
+    var storedTheme = localStorage.getItem("rankly-closure-theme");
+    if (storedTheme === "light" || storedTheme === "dark") {
+      document.documentElement.setAttribute("data-theme", storedTheme);
+    }
+  } catch (e) {}
+  updateToggleIcon();
+
   var supported = ["fr", "en", "es", "ar"];
   var blocks = document.querySelectorAll(".lang-block");
   var buttons = document.querySelectorAll(".lang-switch button");
